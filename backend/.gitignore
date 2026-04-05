@@ -1,0 +1,23 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+
+# Build
+dist/
+build/
+
+# Agent files
+.agents/
+.agent/
+.agent_data/
+.gemini/
+.antigravity/

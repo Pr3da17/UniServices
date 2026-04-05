@@ -1,0 +1,6 @@
+[
+  { "id": 1, "time": "08:30 - 10:00", "subject": "Mathématiques Appliquées", "room": "Amphi A", "type": "Cours" },
+  { "id": 2, "time": "10:15 - 11:45", "subject": "Développement Web (React)", "room": "Lab 204", "type": "TP" },
+  { "id": 3, "time": "13:30 - 15:00", "subject": "Algorithmique Avancée", "room": "Salle 102", "type": "Cours" },
+  { "id": 4, "time": "15:15 - 16:45", "subject": "Anglais Technique", "room": "Salle 305", "type": "TD" }
+]
