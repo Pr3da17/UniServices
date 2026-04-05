@@ -124,5 +124,43 @@ export class CasClient {
     // 4. Return the golden preauth URL
     return `https://wmailetu.univ-artois.fr/service/preauth?isredirect=1&authtoken=${authToken}`;
   }
+
+  /**
+   * MOODLE SESSION FORGER
+   * Authenticates against Artois CAS and obtains the final MoodleSession cookie.
+   */
+  public async getMoodleSession(): Promise<{ cookieHeader: string; sesskey: string }> {
+    const moodleLoginUrl = "https://moodle.univ-artois.fr/login/index.php";
+    console.log(`[CasClient] Forging Moodle Session...`);
+
+    // 1. Get the ticket URL from CAS
+    const ticketUrlWithST = await this.getServiceTicket(moodleLoginUrl);
+
+    // 2. Hit Moodle with the ticket to get the session cookies
+    // Moodle will redirect to the dashboard once authenticated
+    const moodleRes = await this.axiosInstance.get(ticketUrlWithST, {
+      maxRedirects: 5,
+      validateStatus: (status) => status >= 200 && status < 400
+    });
+
+    // 3. Extract MoodleSession and sesskey
+    const cookies = await this.jar.getCookies("https://moodle.univ-artois.fr");
+    const moodleSession = cookies.find(c => c.key === "MoodleSession");
+    
+    if (!moodleSession) {
+      throw new Error("MoodleSession cookie not found after ST validation.");
+    }
+
+    const cookieHeader = cookies.map(c => `${c.key}=${c.value}`).join('; ');
+
+    // Extract sesskey from Moodle's frontend config (JavaScript M object)
+    const $ = cheerio.load(moodleRes.data);
+    const bodyText = $('body').html() || "";
+    const sesskeyMatch = bodyText.match(/"sesskey":"([^"]+)"/);
+    const sesskey = sesskeyMatch ? sesskeyMatch[1] : "";
+
+    console.log(`[CasClient] Moodle Session Forged! (sesskey=${sesskey})`);
+    return { cookieHeader, sesskey };
+  }
 }
 

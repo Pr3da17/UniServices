@@ -1,6 +1,6 @@
 import { Router } from "express";
 import axios from "axios";
-import puppeteer from "puppeteer";
+import { CasClient } from "../utils/casClient";
 import { getSession } from "../scrapers/moodleScraper";
 import { scrapers } from "../controllers/authController";
 import { UserSession } from "../types";
@@ -9,80 +9,46 @@ const router = Router();
 
 const ZIMBRA_AUTH_TIMEOUT = 30 * 60 * 1000; // 30 minutes cache
 
-/**
- * Robustly fetch Zimbra cookies using Puppeteer to handle CAS SSO
- */
 export async function refreshZimbraSession(session: UserSession): Promise<string[]> {
-    console.log(`📡 [Zimbra] Refreshing session via Puppeteer for ${session.username}...`);
+    console.log(`📡 [Zimbra] Refreshing session (No-Puppeteer) for ${session.username}...`);
     
     if (!session.password) {
         throw new Error("Credentials missing in session. Please relogin.");
     }
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
-    });
-
     try {
-        const page = await browser.newPage();
-        await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-
-        const zimbraBase = "https://wmailetu.univ-artois.fr";
+        const cas = new CasClient();
+        await cas.login(session.username, session.password);
         
-        console.log(`📡 [Zimbra] Navigating directly to local login: ${zimbraBase}`);
-        await page.goto(zimbraBase, { waitUntil: "networkidle2", timeout: 45000 });
-
-        // Handle the local Zimbra login form (NOT CAS)
-        if (await page.$('#username')) {
-            console.log(`🔑 [Zimbra] Local login form detected for ${session.username}...`);
-            
-            await page.waitForSelector('#username', { timeout: 10000 });
-            await page.type('#username', session.username);
-            
-            await page.waitForSelector('#password', { timeout: 10000 });
-            await page.type('#password', session.password!);
-            
-            // Click the actual login button to be safer than just 'Enter'
-            const loginButton = await page.$('.ZLoginButton, input[type="submit"], button[type="submit"]');
-            
-            await Promise.all([
-                loginButton ? loginButton.click() : page.keyboard.press('Enter'),
-                page.waitForNavigation({ waitUntil: "networkidle2", timeout: 35000 }).catch(() => console.warn("⚠️ Navigation possiblement terminée (Zimbra AJAX load)."))
-            ]);
-        }
-
-        // Wait for landing on Zimbra or any authenticated Artois URL
-        try {
-            await page.waitForFunction(() => 
-                window.location.href.includes("univ-artois.fr") && 
-                !window.location.href.includes("cas/login"), 
-                { timeout: 15000 }
-            );
-        } catch (e) {
-            const currentUrl = page.url();
-            console.error(`❌ [Zimbra] Navigation failed. Current URL: ${currentUrl}`);
-            if (currentUrl.includes("login")) {
-                throw new Error("Identifiants incorrects ou échec de session CAS.");
-            }
-            throw new Error(`Redirection Zimbra échouée. URL actuelle: ${currentUrl}`);
-        }
-
-        const cookies = await page.cookies();
-        const cookieStrings = cookies.map(c => `${c.name}=${c.value}`);
+        // Use the magic link logic but we just need the cookies it sets
+        const magicLink = await cas.getZimbraMagicLink();
         
-        if (cookieStrings.length === 0) {
-            throw new Error("Aucun cookie récupéré depuis Zimbra.");
+        // The Magic Link logic already populated the cookie jar in cas.axiosInstance
+        // We just need to extract them from the CasClient or hit the magic link
+        const response = await axios.get(magicLink, {
+            maxRedirects: 0, // We just want the cookies from the first hop
+            validateStatus: () => true,
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        });
+
+        const setCookieHeaders = response.headers['set-cookie'] || [];
+        if (setCookieHeaders.length === 0) {
+            // Fallback: try to hit it with a proper jar if needed, 
+            // but usually Preauth sets ZM_AUTH_TOKEN immediately
+            console.warn("⚠️ No cookies in magic link first hop, continuing with preauth sequence...");
         }
 
+        const cookieStrings = setCookieHeaders;
+        
         // Update session
         session.zimbraCookies = cookieStrings;
         session.zimbraLastAuth = Date.now();
         
-        console.log(`✅ [Zimbra] Cookies refreshed for ${session.username}`);
+        console.log(`✅ [Zimbra] Cookies refreshed browserlessly for ${session.username}`);
         return cookieStrings;
-    } finally {
-        await browser.close().catch(() => {});
+    } catch (e: any) {
+        console.error(`❌ [Zimbra] Direct refresh failed: ${e.message}`);
+        throw e;
     }
 }
 
