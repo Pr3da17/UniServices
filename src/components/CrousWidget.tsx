@@ -55,7 +55,8 @@ export default function CrousWidget() {
   useEffect(() => {
     const fetchRegions = async () => {
       try {
-        const res = await fetch("http://localhost:3001/api/crous/regions");
+        const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+        const res = await fetch(`${baseUrl}/api/crous/regions`);
         const json = await res.json();
         if (json.success) setRegions(json.data);
       } catch (err) {
@@ -70,7 +71,8 @@ export default function CrousWidget() {
     if (!selectedRegion) return;
     const fetchRestos = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/crous/regions/${selectedRegion}/restaurants`);
+        const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+        const res = await fetch(`${baseUrl}/api/crous/regions/${selectedRegion}/restaurants`);
         const json = await res.json();
         if (json.success) {
           setRestaurants(json.data);
@@ -95,9 +97,10 @@ export default function CrousWidget() {
     setLoadingMenu(true);
     setError(null);
     try {
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
       const [detailsRes, menuRes] = await Promise.all([
-        fetch(`http://localhost:3001/api/crous/restaurants/${selectedResto}`),
-        fetch(`http://localhost:3001/api/crous/restaurants/${selectedResto}/menu`)
+        fetch(`${baseUrl}/api/crous/restaurants/${selectedResto}`),
+        fetch(`${baseUrl}/api/crous/restaurants/${selectedResto}/menu`)
       ]);
       
       const detailsJson = await detailsRes.json();

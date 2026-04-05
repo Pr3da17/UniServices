@@ -54,7 +54,7 @@ export default function Header({ toggleSidebar, isLoggedIn, username, formationN
           <div className="flex items-center space-x-4 border-l border-border-main pl-4 ml-2">
             {isLoggedIn && sessionId && (
               <a 
-                href={`http://localhost:3001/api/auth/sso/jump?sessionId=${sessionId}&url=https://moodle.univ-artois.fr/`}
+                href={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"}/api/auth/sso/jump?sessionId=${sessionId}&url=https://moodle.univ-artois.fr/`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden lg:flex items-center px-4 py-2.5 bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white rounded-xl text-[11px] font-bold transition-all border border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/20 active:scale-95"

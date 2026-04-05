@@ -53,7 +53,7 @@ export default function MailWidget({ sessionId }: MailWidgetProps) {
     setError(null);
 
     try {
-      const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
       const res = await fetch(`${baseUrl}/api/mail?sessionId=${sessionId}`);
       const data = await res.json();
 
@@ -108,7 +108,7 @@ export default function MailWidget({ sessionId }: MailWidgetProps) {
   };
 
   const handleZimbraAccess = () => {
-    const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+    const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
     const zimbraService = "https://wmailetu.univ-artois.fr/";
     const jumpUrl = `${baseUrl}/api/auth/sso/jump?service=${encodeURIComponent(zimbraService)}&sessionId=${sessionId}`;
     window.open(jumpUrl, '_blank');
@@ -215,7 +215,7 @@ export default function MailWidget({ sessionId }: MailWidgetProps) {
               <motion.a
                 key={mail.id}
                 variants={itemVariants}
-                href={`${window.location.hostname === 'localhost' ? 'http://localhost:3001' : ''}/api/auth/sso/jump?service=${encodeURIComponent("https://wmailetu.univ-artois.fr/zimbra/mail#" + mail.id)}&sessionId=${sessionId}`}
+                href={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"}/api/auth/sso/jump?service=${encodeURIComponent("https://wmailetu.univ-artois.fr/zimbra/mail#" + mail.id)}&sessionId=${sessionId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`group relative flex items-center p-3 rounded-2xl transition-all duration-300 border ${mail.unread

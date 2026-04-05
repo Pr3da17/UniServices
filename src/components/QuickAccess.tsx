@@ -51,7 +51,7 @@ const services = [
 ];
 
 export default function QuickAccess({ sessionId }: QuickAccessProps) {
-  const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+  const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
   useEffect(() => {
     if (!sessionId) return;

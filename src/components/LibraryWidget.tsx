@@ -50,7 +50,8 @@ export default function LibraryWidget() {
     else setRefreshing(true);
 
     try {
-      const res = await fetch(`http://localhost:3001/api/library?token=${selectedBU.token}`);
+      const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+      const res = await fetch(`${baseUrl}/api/library?token=${selectedBU.token}`);
       const data = await res.json();
       
       if (data.success) {
