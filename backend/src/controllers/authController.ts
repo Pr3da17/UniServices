@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { MoodleScraper, getSession, deleteSession } from "../scrapers/moodleScraper";
-import type { LoginRequest, LoginResponse, ErrorResponse } from "../types";
+import { MoodleScraper, getSession, deleteSession } from "../scrapers/moodleScraper.js";
+import type { LoginRequest, LoginResponse, ErrorResponse } from "../types.js";
 
 const MOODLE_BASE_URL = process.env.MOODLE_BASE_URL || "https://moodle.univ-artois.fr";
 export const scrapers = new Map<string, MoodleScraper>();

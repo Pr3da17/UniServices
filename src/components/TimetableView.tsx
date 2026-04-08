@@ -31,7 +31,7 @@ import {
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+import { getApiUrl } from '../utils/api';
 
 interface Group   { id: string; name: string; }
 interface Year    { id: string; name: string; groups: Group[]; }
@@ -100,7 +100,7 @@ export default function TimetableView({ sessionId }: TimetableViewProps) {
   useEffect(() => {
     if (!sidebarOpen || tree) return;
     setTreeLoading(true);
-    axios.get(`${BACKEND_URL}/api/timetable/tree`)
+    axios.get(getApiUrl("/api/timetable/tree"))
       .then(r => setTree(r.data))
       .catch(console.error)
       .finally(() => setTreeLoading(false));
@@ -353,97 +353,148 @@ export default function TimetableView({ sessionId }: TimetableViewProps) {
 
         {/* Navigation semaine/jour */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 hover:bg-accent-bg rounded-full transition-colors text-muted hover:text-primary">
+          <div className="flex items-center gap-2 md:gap-3">
+            <button onClick={() => navigate(-1)} className="p-1.5 md:p-2 hover:bg-accent-bg rounded-full transition-colors text-muted hover:text-primary active:scale-90">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <span className="text-lg font-bold min-w-[220px] text-center text-main">
+            <span className="text-sm md:text-lg font-bold min-w-[140px] md:min-w-[220px] text-center text-main">
               {view === 'day' 
                 ? format(currentDate, 'EEEE d MMMM yyyy', { locale: fr })
                 : `Semaine du ${format(daysToShow[0], 'd MMMM', { locale: fr })}`
               }
             </span>
-            <button onClick={() => navigate(1)} className="p-2 hover:bg-accent-bg rounded-full transition-colors text-muted hover:text-primary">
+            <button onClick={() => navigate(1)} className="p-1.5 md:p-2 hover:bg-accent-bg rounded-full transition-colors text-muted hover:text-primary active:scale-90">
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
           <button 
             onClick={() => setCurrentDate(startOfToday())}
-            className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-all border border-primary/20"
+            className="px-3 md:px-4 py-2 bg-primary/10 text-primary rounded-xl text-[10px] md:text-xs font-bold hover:bg-primary/20 transition-all border border-primary/20 whitespace-nowrap"
           >
             Aujourd'hui
           </button>
         </div>
 
-        {/* Grille jours */}
-        <div className={`grid gap-4 ${view === 'week' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6' : 'grid-cols-1 max-w-md'}`}>
-          {daysToShow.map((day, idx) => {
-            const dayEvents = events.filter(e => isSameDay(new Date(e.start), day));
-            const isToday = isSameDay(day, startOfToday());
-
-            return (
-              <div key={idx} className="space-y-3">
-                <div className={`p-3 rounded-2xl text-center border ${
-                  isToday 
-                    ? 'bg-primary/10 border-primary/40 ring-1 ring-primary/20' 
-                    : 'bg-accent-bg border-border-main'
-                }`}>
-                  <p className="text-[9px] uppercase font-bold tracking-widest text-muted">{format(day, 'EEEE', { locale: fr })}</p>
-                  <p className={`text-xl font-black mt-0.5 ${isToday ? 'text-primary' : 'text-main'}`}>{format(day, 'd')}</p>
-                </div>
-
-                <div className="space-y-2">
-                  {loading ? (
-                    <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-                  ) : dayEvents.length === 0 ? (
-                    <div className="text-center py-6 text-[10px] text-muted italic">Aucun cours</div>
-                  ) : (
-                    <div className="space-y-4">
-                      {dayEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()).map((event, idx, array) => {
-                        const start = new Date(event.start);
-                        const end = new Date(event.end);
-                        const isNow = now >= start && now <= end;
-                        const isPast = now > end;
-                        
-                        const nextEvent = array[idx + 1];
-                        let pauseElement = null;
-                        
-                        if (nextEvent) {
-                          const nextStart = new Date(nextEvent.start);
-                          const diffMs = nextStart.getTime() - end.getTime();
-                          const diffMins = Math.floor(diffMs / (1000 * 60));
-                          
-                          if (diffMins >= 10) { // On affiche la pause si elle fait plus de 10 min
-                            const hours = Math.floor(diffMins / 60);
-                            const mins = diffMins % 60;
-                            const pauseLabel = hours > 0 ? `${hours}H ${mins > 0 ? mins + ' MIN' : ''}` : `${mins} MIN`;
-                            
-                            pauseElement = (
-                              <div key={`pause-${event.id}`} className="relative py-4 flex flex-col items-center justify-center group/pause">
-                                <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover/pause:opacity-40 transition-opacity">
-                                  <div className="w-[1px] h-full border-l border-dashed border-muted"></div>
-                                </div>
-                                <div className="relative z-10 flex items-center gap-2 px-3 py-1 bg-card-bg/50 backdrop-blur-sm rounded-full border border-border-main/50 text-[9px] font-black uppercase tracking-[0.2em] text-muted/40 group-hover/pause:text-primary/60 group-hover/pause:border-primary/30 transition-all">
-                                   <span className="opacity-50">☕</span> PAUSE • {pauseLabel}
-                                </div>
-                              </div>
-                            );
-                          }
-                        }
-
-                        return (
-                          <div key={event.id}>
-                            <EventCard event={event} isNow={isNow} isPast={isPast} now={now} />
-                            {pauseElement}
-                          </div>
-                        );
-                      })}
+        {/* Grille jours / Mobile Pager / Horizontal Scroll */}
+        <div className="relative">
+          <motion.div 
+             className="flex overflow-x-auto snap-x snap-mandatory pb-8 pt-2 scroll-smooth custom-scrollbar-horizontal gap-4 md:gap-6"
+             layout
+             style={{ 
+               scrollbarWidth: 'thin',
+               scrollbarColor: 'var(--accent-border) transparent'
+             }}
+          >
+            {daysToShow.map((day, idx) => {
+              const dayEvents = events.filter(e => isSameDay(new Date(e.start), day));
+              const isToday = isSameDay(day, startOfToday());
+              
+              return (
+                <div 
+                  key={idx} 
+                  className="flex-shrink-0 w-[85vw] md:w-[320px] lg:w-[350px] snap-center space-y-5"
+                >
+                  {/* CampusConnect Styled Day Header */}
+                  <div className={`relative p-4 rounded-3xl overflow-hidden transition-all duration-500 border group ${
+                    isToday 
+                      ? 'bg-primary/10 border-primary/40 shadow-lg shadow-primary/5' 
+                      : 'bg-card-bg/40 border-border-main hover:border-primary/20 hover:bg-card-bg/60'
+                  }`}>
+                    {isToday && (
+                      <div className="absolute top-0 right-0 p-2">
+                        <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${isToday ? 'text-primary' : 'text-muted'}`}>
+                          {format(day, 'EEEE', { locale: fr })}
+                        </span>
+                        <span className={`text-2xl font-black ${isToday ? 'text-main' : 'text-main/90'}`}>
+                          {format(day, 'd MMMM', { locale: fr })}
+                        </span>
+                      </div>
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${
+                        isToday ? 'bg-primary/20 border-primary/30 text-primary' : 'bg-accent-bg border-border-main text-muted'
+                      }`}>
+                        <CalendarDays className="w-5 h-5" />
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Events List */}
+                  <div className="space-y-4">
+                    {loading ? (
+                      <div className="flex flex-col items-center justify-center py-20 gap-3 glass rounded-3xl border-border-main/50">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Récupération...</p>
+                      </div>
+                    ) : dayEvents.length === 0 ? (
+                      <div className="text-center py-16 glass rounded-[2.5rem] border-dashed border-border-main/40 flex flex-col items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-accent-bg flex items-center justify-center text-muted/30">
+                           <CalendarDays className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-main">Journée vide</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">Aucun cours à l'horizon</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-5 px-1">
+                        {dayEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()).map((event, idx, array) => {
+                          const start = new Date(event.start);
+                          const end = new Date(event.end);
+                          const isNow = now >= start && now <= end;
+                          const isPast = now > end;
+                          
+                          const nextEvt = array[idx + 1];
+                          let pauseElement = null;
+                          
+                          if (nextEvt) {
+                            const nextStart = new Date(nextEvt.start);
+                            const diffMs = nextStart.getTime() - end.getTime();
+                            const diffMins = Math.floor(diffMs / (1000 * 60));
+                            
+                            if (diffMins >= 10) {
+                              const hours = Math.floor(diffMins / 60);
+                              const mins = diffMins % 60;
+                              const pauseLabel = hours > 0 ? `${hours}H ${mins > 0 ? mins + ' MIN' : ''}` : `${mins} MIN`;
+                              
+                              pauseElement = (
+                                <div key={`pause-${event.id}`} className="relative py-1 flex items-center justify-center">
+                                  <div className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-border-main/50 to-transparent"></div>
+                                  <div className="relative z-10 flex items-center gap-2 px-4 py-1.5 bg-app-bg/80 backdrop-blur-md rounded-full border border-border-main text-[9px] font-black uppercase tracking-tighter text-muted group-hover:text-primary transition-colors">
+                                     <span className="w-1 h-1 rounded-full bg-primary/40 mr-1" />
+                                     Pause • {pauseLabel}
+                                  </div>
+                                </div>
+                              );
+                            }
+                          }
+
+                          return (
+                            <motion.div 
+                              key={event.id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.05 }}
+                            >
+                              <EventCard event={event} isNow={isNow} isPast={isPast} now={now} />
+                              {pauseElement}
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </motion.div>
+          
+          {/* Subtle Fade effect on edges */}
+          <div className="absolute left-0 top-0 bottom-8 w-12 bg-gradient-to-r from-app-bg to-transparent pointer-events-none z-10 opacity-40 md:hidden" />
+          <div className="absolute right-0 top-0 bottom-8 w-12 bg-gradient-to-l from-app-bg to-transparent pointer-events-none z-10 opacity-40 md:hidden" />
         </div>
       </div>
     </div>
@@ -457,33 +508,37 @@ function EventCard({ event, isNow, isPast, now }: { event: TimetableEvent; isNow
   
   return (
     <div 
-      className={`group relative p-4 rounded-3xl transition-all duration-500 border ring-1 ring-border-main/50 overflow-hidden ${
+      className={`group relative p-3 md:p-4 rounded-3xl transition-all duration-500 border ring-1 ring-border-main/10 overflow-hidden ${
         isNow 
           ? 'bg-primary/10 border-primary/40 ring-primary/20 shadow-lg shadow-primary/10' 
           : isPast 
-            ? 'opacity-40 grayscale-[0.5] hover:opacity-70 bg-accent-bg/30 border-transparent ring-0' 
-            : 'glass border-border-main hover:border-primary/30 hover:bg-primary/5'
+            ? 'opacity-40 grayscale-[0.8] hover:opacity-70 bg-accent-bg/30 border-transparent ring-0' 
+            : 'glass border-border-main hover:border-primary/30 hover:bg-primary/5 shadow-sm'
       }`}
-      style={{ borderLeftWidth: '4px', borderLeftColor: event.color }}
+      style={{ borderLeftWidth: '5px', borderLeftColor: event.color || 'var(--color-primary)' }}
     >
       {/* Background Glow for current class */}
       {isNow && (
-        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl animate-pulse" />
+        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/20 rounded-full blur-2xl animate-pulse" />
       )}
 
-      <div className="flex items-start justify-between gap-4 mb-2">
+      <div className="flex items-start justify-between gap-3 mb-1.5">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-             <span className={`text-[10px] font-bold font-mono tracking-tighter ${isNow ? 'text-primary' : 'text-muted'}`}>
-                {format(start, 'HH:mm')} → {format(end, 'HH:mm')}
+             <span className={`text-[10px] md:text-[11px] font-black font-mono tracking-tight ${isNow ? 'text-primary' : 'text-muted'}`}>
+                {format(start, 'HH:mm')} — {format(end, 'HH:mm')}
              </span>
              {isNow && (
-               <span className="px-1.5 py-0.5 rounded-md bg-primary text-white text-[8px] font-black uppercase tracking-widest animate-in zoom-in duration-300">
+               <motion.span 
+                 initial={{ scale: 0.8, opacity: 0 }}
+                 animate={{ scale: 1, opacity: 1 }}
+                 className="px-1.5 py-0.5 rounded-md bg-primary text-white text-[8px] font-black uppercase tracking-widest"
+               >
                  En cours
-               </span>
+               </motion.span>
              )}
           </div>
-          <h4 className={`text-sm font-bold line-clamp-1 leading-tight transition-colors ${isNow ? 'text-primary' : 'text-main'}`}>
+          <h4 className={`text-xs md:text-sm font-black line-clamp-2 leading-tight transition-colors ${isNow ? 'text-primary' : 'text-main'}`}>
             {event.title}
           </h4>
         </div>
@@ -491,20 +546,20 @@ function EventCard({ event, isNow, isPast, now }: { event: TimetableEvent; isNow
 
       <div className="flex items-center gap-3 mt-2">
         {event.location && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 opacity-80">
             <MapPin className="w-3 h-3 text-muted" />
-            <span className="text-[10px] text-muted font-medium truncate">{event.location}</span>
+            <span className="text-[10px] text-muted font-bold truncate tracking-tight">{event.location}</span>
           </div>
         )}
       </div>
       
       {/* Progress bar pour cours en cours */}
       {isNow && (
-        <div className="mt-4 h-1 bg-primary/20 rounded-full overflow-hidden">
+        <div className="mt-3 h-1 bg-primary/20 rounded-full overflow-hidden">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(100, Math.max(0, ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100))}%` }}
-            className="h-full bg-primary"
+            className="h-full bg-primary shadow-[0_0_8px_rgba(99,102,241,0.5)]"
             transition={{ duration: 1 }}
           />
         </div>

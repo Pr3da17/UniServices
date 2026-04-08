@@ -1,6 +1,8 @@
 import { Router } from "express";
-import { getSession } from "../scrapers/moodleScraper";
-import { CasClient } from "../utils/casClient";
+import { getSession } from "../scrapers/moodleScraper.js";
+import { CasClient } from "../utils/casClient.js";
+import { decrypt } from "../utils/security.js";
+import { refreshZimbraSession } from "./mail.js";
 
 const router = Router();
 
@@ -16,7 +18,7 @@ router.get("/warm-cache", async (req, res) => {
   const { sessionId } = req.query;
   const session = getSession(sessionId?.toString() || "");
 
-  if (!session || !session.password) {
+  if (!session || !session.encryptedPassword) {
     return res.status(401).json({ error: "Session Moodle invalide ou expirée." });
   }
 
@@ -26,7 +28,8 @@ router.get("/warm-cache", async (req, res) => {
     if (!casClient) {
       casClient = new CasClient();
       console.log(`[SSO Warmup] Authorizing fast CAS client for ${session.username}...`);
-      await casClient.login(session.username, session.password);
+      const password = decrypt(session.encryptedPassword);
+      await casClient.login(session.username, password);
       casClientCache.set(session.username, casClient);
       console.log(`[SSO Warmup] Client cached and ready.`);
     }
@@ -48,8 +51,6 @@ router.get("/warm-cache", async (req, res) => {
   }
 });
 
-import { refreshZimbraSession } from "./mail";
-
 /**
  * SSO Jump Gate: The Ultra-Fast Redirector
  * Uses the pre-warmed CasClient to strike CAS and get a ticket in ~50ms.
@@ -60,7 +61,7 @@ router.get("/jump", async (req, res) => {
   if (!service) return res.status(400).send("Service URL required");
 
   const session = getSession(sessionId?.toString() || "");
-  if (!session || !session.password) {
+  if (!session || !session.encryptedPassword) {
     return res.redirect(service.toString()); // Fallback to raw service on auth failure
   }
 
@@ -83,7 +84,7 @@ router.get("/jump", async (req, res) => {
 
       let cookies = session.zimbraCookies;
       if (needsAuth) {
-        console.log("🐌 [SSO Jump] Cache miss. Firing Puppeteer on demand...");
+        console.log("🐌 [SSO Jump] Cache miss. Firing headless CasClient on demand...");
         cookies = await refreshZimbraSession(session);
       } else {
         console.log("🚀 [SSO Jump] Cache hit! Zero-Load Zimbra execution.");
@@ -111,7 +112,8 @@ router.get("/jump", async (req, res) => {
     // If cache was dropped for some reason, re-warm on the fly
     if (!casClient) {
       casClient = new CasClient();
-      await casClient.login(session.username, session.password);
+      const password = decrypt(session.encryptedPassword!);
+      await casClient.login(session.username, password);
       casClientCache.set(session.username, casClient);
     }
 

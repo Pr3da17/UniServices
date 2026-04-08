@@ -1,7 +1,8 @@
 import axios, { AxiosInstance } from "axios";
-import { CasClient } from "../utils/casClient";
+import { CasClient } from "../utils/casClient.js";
 import * as cheerio from "cheerio";
-import type { Assignment, Course, UserSession, CourseSection } from "../types";
+import { encrypt, decrypt, generateSecureSessionId } from "../utils/security.js";
+import type { Assignment, Course, UserSession, CourseSection } from "../types.js";
 
 const sessions = new Map<string, UserSession>();
 
@@ -22,7 +23,7 @@ export class MoodleScraper {
    */
   async login(username: string, password: string): Promise<UserSession> {
     if (username.toLowerCase() === "demo") {
-      const sessionId = this.generateSessionId();
+      const sessionId = generateSecureSessionId();
       const mockSession: UserSession = {
         userId: "demo-user",
         username: "Étudiant Démo",
@@ -44,7 +45,7 @@ export class MoodleScraper {
       
       const { cookieHeader, sesskey } = await cas.getMoodleSession();
       
-      const sessionId = this.generateSessionId();
+      const sessionId = generateSecureSessionId();
       const session: UserSession = {
         userId: "student-ar",
         username: username,
@@ -53,7 +54,7 @@ export class MoodleScraper {
         loginTime: Date.now(),
         lastActivityTime: Date.now(),
         sessionId: sessionId,
-        password: password, // Gardé pour le rebond ADE
+        encryptedPassword: encrypt(password), // Chiffrement AES-256-GCM
       };
 
       sessions.set(sessionId, session);
@@ -76,7 +77,8 @@ export class MoodleScraper {
     
     try {
       const cas = new CasClient();
-      await cas.login(session.username, session.password || "");
+      const password = session.encryptedPassword ? decrypt(session.encryptedPassword) : "";
+      await cas.login(session.username, password);
       
       const service = targetService || (this.baseUrl + "/login/index.php");
       const ticketUrl = await cas.getServiceTicket(service);
@@ -96,7 +98,8 @@ export class MoodleScraper {
     
     try {
       const cas = new CasClient();
-      await cas.login(session.username, session.password || "");
+      const password = session.encryptedPassword ? decrypt(session.encryptedPassword) : "";
+      await cas.login(session.username, password);
       
       const adeBase = "https://ade-consult.univ-artois.fr/jsp/custom/modules/plannings/direct_planning.jsp";
       const ticketUrl = await cas.getServiceTicket(adeBase);
@@ -356,10 +359,6 @@ export class MoodleScraper {
     if (daysUntilDue <= 3) return "high";
     if (daysUntilDue <= 7) return "medium";
     return "low";
-  }
-
-  private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }
 

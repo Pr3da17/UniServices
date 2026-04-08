@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-import { getSession } from './scrapers/moodleScraper';
+import { getSession } from './scrapers/moodleScraper.js';
 
 async function testProxy(sessionId: string, targetUrl: string) {
     const session = getSession(sessionId) as any;

@@ -10,9 +10,9 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, toggleSidebar, activeTab, onTabChange }: SidebarProps) {
   const menuItems = [
     { id: "dashboard", icon: Home, label: "Dashboard" },
+    { id: "calendar", icon: Calendar, label: "Emploi du Temps" },
     { id: "courses", icon: BookOpen, label: "Mes Cours" },
     { id: "homework", icon: CheckCircle2, label: "Mes Devoirs" },
-    { id: "calendar", icon: Calendar, label: "Emploi du Temps" },
     { id: "settings", icon: Settings, label: "Paramètres" },
   ];
 

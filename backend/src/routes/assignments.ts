@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAssignments, getCourses, getCatalog, getCourseContent, clearCache } from "../controllers/assignmentsController";
+import { getAssignments, getCourses, getCatalog, getCourseContent, clearCache } from "../controllers/assignmentsController.js";
 
 const router = Router();
 

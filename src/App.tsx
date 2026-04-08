@@ -13,16 +13,29 @@ import MailWidget from "./components/MailWidget";
 import CrousWidget from "./components/CrousWidget";
 import ViewLoader from "./components/ViewLoader";
 import QuickAccess from "./components/QuickAccess";
+import BottomNav from "./components/BottomNav";
 
 import { ThemeProvider } from "./context/ThemeContext";
 import { SettingsProvider, useSettings } from "./context/SettingsContext";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Lazy Loaded views for ultra-fast initial load
 const CourseExplorer = lazy(() => import("./components/CourseExplorer"));
 const TimetableView = lazy(() => import("./components/TimetableView"));
 const HomeworkView = lazy(() => import("./components/HomeworkView"));
 const SettingsView = lazy(() => import("./components/SettingsView"));
+
+const PageTransition = ({ children }: { children: React.ReactNode }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+    animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+    exit={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+    transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+    className="w-full"
+  >
+    {children}
+  </motion.div>
+);
 
 export default function App() {
   return (
@@ -119,18 +132,22 @@ function AppContent() {
       )}
 
       <div
-        className={`${sidebarOpen ? "lg:ml-64" : ""} transition-all duration-300`}
+        className={`${sidebarOpen ? "lg:ml-64" : ""} transition-all duration-300 pb-20 lg:pb-0`}
       >
         <Header toggleSidebar={toggleSidebar} isLoggedIn={isLoggedIn} username={username} formationName={formationName} onLogout={handleLogout} sessionId={sessionId} />
 
-        <main className="p-6 space-y-8">
+        <main className="p-4 md:p-6 space-y-8">
           <ErrorBoundary>
             <Suspense fallback={<ViewLoader />}>
-              {!isLoggedIn ? (
-                <LoginForm onLoginSuccess={handleLoginSuccess} />
-              ) : (
-                activeTab === "dashboard" ? (
-                  <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000 fill-mode-both">
+              <AnimatePresence mode="wait">
+                {!isLoggedIn ? (
+                  <PageTransition key="login">
+                    <LoginForm onLoginSuccess={handleLoginSuccess} />
+                  </PageTransition>
+                ) : (
+                  activeTab === "dashboard" ? (
+                    <PageTransition key="dashboard">
+                      <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000 fill-mode-both">
                     {/* Hero Section / Welcome */}
                     <div className="flex flex-col gap-10 border-b border-border-main pb-10">
                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -216,46 +233,57 @@ function AppContent() {
                       </div>
                     </div>
                   </div>
+                  </PageTransition>
                 ) : activeTab === "settings" ? (
-                  <SettingsView 
-                    onLogout={handleLogout} 
-                    username={username || "Étudiant"} 
-                    sessionId={sessionId} 
-                  />
+                  <PageTransition key="settings">
+                    <SettingsView 
+                      onLogout={handleLogout} 
+                      username={username || "Étudiant"} 
+                      sessionId={sessionId} 
+                    />
+                  </PageTransition>
                 ) : activeTab === "courses" ? (
-                  <CourseExplorer 
-                    courses={courses}
-                    favoriteIds={favoriteIds}
-                    hiddenIds={hiddenIds}
-                    courseContents={courseContents}
-                    fetchCourseContent={fetchCourseContent}
-                    onToggleFavorite={handleToggleFavorite}
-                    onReorderFavorites={handleReorderFavorites}
-                    onToggleVisibility={handleToggleVisibility}
-                    sessionId={sessionId || ""}
-                  />
+                  <PageTransition key="courses">
+                    <CourseExplorer 
+                      courses={courses}
+                      favoriteIds={favoriteIds}
+                      hiddenIds={hiddenIds}
+                      courseContents={courseContents}
+                      fetchCourseContent={fetchCourseContent}
+                      onToggleFavorite={handleToggleFavorite}
+                      onReorderFavorites={handleReorderFavorites}
+                      onToggleVisibility={handleToggleVisibility}
+                      sessionId={sessionId || ""}
+                    />
+                  </PageTransition>
                 ) : activeTab === "calendar" ? (
-                  <TimetableView sessionId={sessionId || undefined} />
+                  <PageTransition key="calendar">
+                    <TimetableView sessionId={sessionId || undefined} />
+                  </PageTransition>
                 ) : activeTab === "homework" ? (
-                  <HomeworkView 
-                    urgences={urgences}
-                    userTasks={userTasks}
-                    sessionId={sessionId || ""}
-                    onAddTask={handleAddTask}
-                    onToggleTask={handleToggleTask}
-                    onDeleteTask={handleDeleteTask}
-                    onUpdateTask={handleUpdateTask}
-                  />
+                  <PageTransition key="homework">
+                    <HomeworkView 
+                      urgences={urgences}
+                      userTasks={userTasks}
+                      sessionId={sessionId || ""}
+                      onAddTask={handleAddTask}
+                      onToggleTask={handleToggleTask}
+                      onDeleteTask={handleDeleteTask}
+                      onUpdateTask={handleUpdateTask}
+                    />
+                  </PageTransition>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-20 opacity-50">
                     <p>Cet onglet ({activeTab}) sera bientôt disponible.</p>
                   </div>
                 )
               )}
+              </AnimatePresence>
             </Suspense>
           </ErrorBoundary>
         </main>
       </div>
+      {isLoggedIn && <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />}
     </div>
   );
 }

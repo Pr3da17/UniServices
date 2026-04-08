@@ -1,7 +1,6 @@
 import axios from "axios";
 
-// Backend configuration
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+import { getApiUrl } from "../utils/api";
 
 // Types
 export type Assignment = {
@@ -46,7 +45,7 @@ export async function loginMoodle(
   }
 
   try {
-    const response = await axios.post(`${BACKEND_URL}/api/auth/login`, {
+    const response = await axios.post(getApiUrl("/api/auth/login"), {
       username: username.trim(),
       password: password.trim(),
     });
@@ -80,7 +79,7 @@ export async function getUpcomingAssignments(
   }
 
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/assignments`, {
+    const response = await axios.get(getApiUrl("/api/assignments"), {
       params: { sessionId },
     });
 
@@ -107,7 +106,7 @@ export async function getUpcomingAssignments(
  */
 export async function verifySession(sessionId: string): Promise<boolean> {
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/auth/verify`, {
+    const response = await axios.get(getApiUrl("/api/auth/verify"), {
       params: { sessionId },
     });
     return response.data.valid === true;
@@ -121,7 +120,7 @@ export async function verifySession(sessionId: string): Promise<boolean> {
  */
 export async function getCourses(sessionId: string): Promise<Course[]> {
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/assignments/courses`, {
+    const response = await axios.get(getApiUrl("/api/assignments/courses"), {
       params: { sessionId },
     });
     if (!response.data.success) {
@@ -141,7 +140,7 @@ export async function getCourses(sessionId: string): Promise<Course[]> {
  */
 export async function getCatalog(sessionId: string, categoryId: string): Promise<Course[]> {
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/assignments/catalog`, {
+    const response = await axios.get(getApiUrl("/api/assignments/catalog"), {
       params: { sessionId, categoryId },
     });
     if (!response.data.success) {
@@ -165,7 +164,7 @@ export async function getCourseContent(
   forceRefresh: boolean = false
 ): Promise<{ success: boolean; data: any }> {
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/assignments/course/${courseId}`, {
+    const response = await axios.get(getApiUrl(`/api/assignments/course/${courseId}`), {
       params: { sessionId, forceRefresh },
     });
     return response.data;
@@ -181,7 +180,7 @@ export async function getCourseContent(
 export async function logoutMoodle(sessionId: string): Promise<void> {
   try {
     if (sessionId) {
-      await axios.post(`${BACKEND_URL}/api/auth/logout`, { sessionId });
+      await axios.post(getApiUrl("/api/auth/logout"), { sessionId });
     }
   } catch (error) {
     console.warn("Logout error:", error);

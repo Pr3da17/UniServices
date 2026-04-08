@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 // Import Backend Routes from compiled dist
 // Note: We avoid importing the full backend server.js to prevent it from starting its own listener
 import authRoutes from './backend/dist/routes/auth.js';
-import ssoSyncRoutes from './backend/dist/routes/ssoSync.js';
+// ssoSync is now bundled inside authRoutes
 import assignmentsRoutes from './backend/dist/routes/assignments.js';
 import timetableRoutes from './backend/dist/routes/timetable.js';
 import libraryRoutes from './backend/dist/routes/library.js';
@@ -36,8 +36,13 @@ app.use(express.json());
 app.use(generalLimiter);
 
 // --- API ROUTES ---
-app.use("/api/auth", authRoutes);
-app.use("/api/auth/sso", ssoSyncRoutes);
+// Debug logger for API routes
+app.use("/api", (req, res, next) => {
+    console.log(`⚡ [API Request] ${req.method} ${req.path}`);
+    next();
+});
+
+app.use("/api/auth", authRoutes); // authRoutes now handles both auth and sso
 app.use("/api/assignments", assignmentsRoutes);
 app.use("/api/timetable", timetableRoutes);
 app.use("/api/library", libraryRoutes);

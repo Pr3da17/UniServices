@@ -6,6 +6,7 @@ import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { getSession } from '../scrapers/moodleScraper.js';
 import { CasClient } from '../utils/casClient.js';
+import { decrypt } from '../utils/security.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ADE_ICAL_BASE = "https://ade-consult.univ-artois.fr/jsp/custom/modules/plannings/direct_planning.jsp";
@@ -127,7 +128,7 @@ export const getTimetable = async (req: Request, res: Response) => {
   if (!icsData && sessionId) {
     const session = getSession(sessionId as string);
     const username = session?.username;
-    const password = session?.password;
+    const password = session?.encryptedPassword ? decrypt(session.encryptedPassword) : undefined;
 
     if (!icsData && username && password) {
       console.log(`🚀 [ADE] Direct Auth (No-Puppeteer) for ${username} (resources=${resources})`);

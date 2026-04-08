@@ -50,25 +50,27 @@ const services = [
   }
 ];
 
+import { getApiUrl, BACKEND_URL } from "../utils/api";
+
 export default function QuickAccess({ sessionId }: QuickAccessProps) {
-  const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
   useEffect(() => {
     if (!sessionId) return;
     // Warm up the high-speed CAS cache in the backend
     // This logs into CAS and stores the TGC cookie on the server.
-    axios.get(`${baseUrl}/api/auth/sso/warm-cache?sessionId=${sessionId}`)
+    axios.get(getApiUrl(`/api/auth/sso/warm-cache?sessionId=${sessionId}`))
       .catch(err => console.error("SSO Warmup failed:", err));
-  }, [sessionId, baseUrl]);
+  }, [sessionId, BACKEND_URL]);
 
   if (!sessionId) return null;
 
   const handleSsoJump = (serviceUrl: string) => {
     // We use the ultra-fast jump gate. It assumes the cache is warm and
     // responds with a direct ST redirect in ~50ms.
-    const jumpUrl = `${baseUrl}/api/auth/sso/jump?service=${encodeURIComponent(serviceUrl)}&sessionId=${sessionId}`;
+    const jumpUrl = getApiUrl(`/api/auth/sso/jump?service=${encodeURIComponent(serviceUrl)}&sessionId=${sessionId}`);
     window.open(jumpUrl, '_blank');
   };
+
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">

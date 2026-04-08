@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+import { getApiUrl } from "../utils/api";
 
 export interface TimetableEvent {
   id: string;
@@ -47,7 +47,7 @@ export const fetchTimetable = async (resources: string, sessionId?: string, forc
   }
 
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/timetable`, {
+    const response = await axios.get(getApiUrl("/api/timetable"), {
       params: { resources, sessionId }
     });
     
@@ -76,7 +76,7 @@ export const fetchTimetable = async (resources: string, sessionId?: string, forc
 // Récupérer l'arborescence (4 niveaux)
 export const fetchTimetableTree = async (parentId?: string): Promise<any[]> => {
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/timetable/tree`, {
+    const response = await axios.get(getApiUrl("/api/timetable/tree"), {
       params: { parentId }
     });
     return response.data;
@@ -89,7 +89,7 @@ export const fetchTimetableTree = async (parentId?: string): Promise<any[]> => {
 // Real searching via backend
 export const searchResources = async (query: string, sessionId?: string): Promise<any[]> => {
   try {
-    const response = await axios.get(`${BACKEND_URL}/api/timetable/search`, {
+    const response = await axios.get(getApiUrl("/api/timetable/search"), {
       params: { q: query, sessionId }
     });
     return response.data;

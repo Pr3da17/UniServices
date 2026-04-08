@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 import Widget from "./Widget";
 import { Skeleton } from "./Skeleton";
+import { getApiUrl } from "../utils/api";
 
 interface ZimbraMail {
   id: string;
@@ -53,8 +54,7 @@ export default function MailWidget({ sessionId }: MailWidgetProps) {
     setError(null);
 
     try {
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
-      const res = await fetch(`${baseUrl}/api/mail?sessionId=${sessionId}`);
+      const res = await fetch(getApiUrl(`/api/mail?sessionId=${sessionId}`));
       const data = await res.json();
 
       if (data.success) {
@@ -108,9 +108,8 @@ export default function MailWidget({ sessionId }: MailWidgetProps) {
   };
 
   const handleZimbraAccess = () => {
-    const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
     const zimbraService = "https://wmailetu.univ-artois.fr/";
-    const jumpUrl = `${baseUrl}/api/auth/sso/jump?service=${encodeURIComponent(zimbraService)}&sessionId=${sessionId}`;
+    const jumpUrl = getApiUrl(`/api/auth/sso/jump?service=${encodeURIComponent(zimbraService)}&sessionId=${sessionId}`);
     window.open(jumpUrl, '_blank');
   };
 
@@ -215,7 +214,7 @@ export default function MailWidget({ sessionId }: MailWidgetProps) {
               <motion.a
                 key={mail.id}
                 variants={itemVariants}
-                href={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"}/api/auth/sso/jump?service=${encodeURIComponent("https://wmailetu.univ-artois.fr/zimbra/mail#" + mail.id)}&sessionId=${sessionId}`}
+                href={getApiUrl(`/api/auth/sso/jump?service=${encodeURIComponent("https://wmailetu.univ-artois.fr/zimbra/mail#" + mail.id)}&sessionId=${sessionId}`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`group relative flex items-center p-3 rounded-2xl transition-all duration-300 border ${mail.unread

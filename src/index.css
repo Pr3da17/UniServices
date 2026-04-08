@@ -28,42 +28,44 @@
   --bg-app: #030712; /* slate-950 */
   --text-main: #f1f5f9; /* slate-100 */
   --text-muted: #94a3b8; /* slate-400 */
-  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-bg: rgba(15, 23, 42, 0.65);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: rgba(0, 0, 0, 0.3);
+  --glass-shadow: rgba(0, 0, 0, 0.4);
   --card-bg: rgba(30, 41, 59, 0.4);
   --card-hover: rgba(51, 65, 85, 0.6);
   --input-bg: rgba(15, 23, 42, 0.6);
-  --border: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.06);
   --accent: #6366f1;
   --accent-bg: rgba(99, 102, 241, 0.1);
   --accent-border: rgba(99, 102, 241, 0.2);
   --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --nav-bg: rgba(15, 23, 42, 0.85);
 }
 
 .light {
-  --bg-app: #fcfcfd; 
-  --text-main: #1a1c2e; 
-  --text-muted: #5f667a; 
-  --glass-bg: rgba(255, 255, 255, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.8);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-  --card-bg: rgba(255, 255, 255, 0.6);
-  --card-hover: rgba(255, 255, 255, 0.9);
-  --input-bg: rgba(255, 255, 255, 0.8);
-  --border: rgba(226, 232, 240, 0.8);
+  --bg-app: #f8fafc; /* slate-50 */
+  --text-main: #0f172a; /* slate-900 */
+  --text-muted: #64748b; /* slate-500 */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
+  --card-bg: rgba(255, 255, 255, 1);
+  --card-hover: #ffffff;
+  --input-bg: rgba(241, 245, 249, 0.8);
+  --border: rgba(226, 232, 240, 1);
   --accent: #6366f1;
-  --accent-bg: rgba(99, 102, 241, 0.05);
-  --accent-border: rgba(99, 102, 241, 0.1);
-  --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --accent-bg: rgba(99, 102, 241, 0.06);
+  --accent-border: rgba(99, 102, 241, 0.15);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --nav-bg: rgba(255, 255, 255, 0.9);
 }
 
 @utility glass {
   background-color: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 var(--glass-shadow);
+  box-shadow: 0 10px 40px 0 var(--glass-shadow);
   transition: var(--transition-theme);
 }
 
@@ -71,8 +73,25 @@
   body {
     background-color: var(--bg-app);
     color: var(--text-main);
-    @apply antialiased;
+    @apply antialiased select-none touch-pan-y;
     transition: var(--transition-theme);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Custom Scrollbar for Premium Feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
   }
 
   /* Règle globale d'accessibilité pour le Motion Design */
@@ -89,5 +108,24 @@
 @layer utilities {
   @keyframes shimmer {
     100% { transform: translateX(100%); }
+  }
+
+  .custom-scrollbar-horizontal {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-primary) transparent;
+
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--accent-border);
+      border-radius: 10px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
   }
 }

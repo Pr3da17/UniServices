@@ -14,6 +14,7 @@ import {
 import Widget from "./Widget";
 import { Skeleton } from "./Skeleton";
 import { artoisLibraries, type Library } from "../data/libraries";
+import { getApiUrl } from "../utils/api";
 
 interface Forecast {
   time: string;
@@ -50,8 +51,7 @@ export default function LibraryWidget() {
     else setRefreshing(true);
 
     try {
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
-      const res = await fetch(`${baseUrl}/api/library?token=${selectedBU.token}`);
+      const res = await fetch(getApiUrl(`/api/library?token=${selectedBU.token}`));
       const data = await res.json();
       
       if (data.success) {

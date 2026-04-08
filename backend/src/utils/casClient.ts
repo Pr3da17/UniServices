@@ -93,36 +93,54 @@ export class CasClient {
   }
 
   /**
-   * ZIMBRA MAGIC LINK (The Ultimate Backdoor)
-   * Consumes a CAS ticket server-side to steal the `ZM_AUTH_TOKEN` cookie,
-   * then crafts a direct preauth URL that Zimbra natively accepts to log the user in instantly.
+   * ZIMBRA SOAP AUTHENTICATION
+   * Uses Zimbra's official SOAP API to authenticate directly and obtain the ZM_AUTH_TOKEN
+   * in its raw form (the long 0_... string). This is 100% reliable and instantaneous.
    */
-  public async getZimbraMagicLink(): Promise<string> {
-    const zimbraService = "https://wmailetu.univ-artois.fr/zimbra/?loginOp=cas";
-    console.log(`[CasClient] Forging Zimbra Magic Link...`);
+  public async getZimbraSoapToken(username: string, password: string): Promise<string> {
+    console.log(`[CasClient] Forging Zimbra SOAP session for ${username}...`);
     
-    // 1. Get the ticket URL
-    const ticketUrl = await this.getServiceTicket(zimbraService);
-    
-    // 2. Visit the ticket URL so Zimbra validates it and issues the ZM_AUTH_TOKEN cookie
-    await this.axiosInstance.get(ticketUrl, { 
-      maxRedirects: 5,
-      validateStatus: () => true 
-    });
+    // Format to standard email for Zimbra if needed (Artois uses @ens.univ-artois.fr)
+    const email = username.includes('@') ? username : `${username}@ens.univ-artois.fr`;
 
-    // 3. Extract the ZM_AUTH_TOKEN from our Tough-Cookie Jar
-    const cookies = await this.jar.getCookies("https://wmailetu.univ-artois.fr");
-    const authTokenCookie = cookies.find(c => c.key === "ZM_AUTH_TOKEN");
-    
-    if (!authTokenCookie || !authTokenCookie.value) {
-      throw new Error("Impossible d'extraire le ZM_AUTH_TOKEN. Zimbra a peut-être rejeté le ticket.");
+    const requestJson = {
+      "Header": {
+        "context": {
+          "_jsns": "urn:zimbra",
+          "userAgent": { "name": "ZimbraWebClient" }
+        }
+      },
+      "Body": {
+        "AuthRequest": {
+          "_jsns": "urn:zimbraAccount",
+          "account": { "by": "name", "_content": email },
+          "password": { "_content": password }
+        }
+      }
+    };
+
+    try {
+      const res = await axios.post('https://wmailetu.univ-artois.fr/service/soap', requestJson, {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0'
+        },
+        timeout: 10000
+      });
+
+      const body = res.data?.Body;
+      const token = body?.AuthResponse?.authToken?.[0]?._content;
+      
+      if (token) {
+        console.log(`[CasClient] Zimbra SOAP Token Forged Successfully!`);
+        return token;
+      }
+      
+      throw new Error("AuthToken manquant dans la réponse SOAP.");
+    } catch (err: any) {
+      console.error(`[CasClient] SOAP Auth Failed: ${err.message}`);
+      throw new Error("Authentification Zimbra échouée via l'API.");
     }
-
-    const authToken = authTokenCookie.value;
-    console.log(`[CasClient] Magic Token Extracted! (${authToken.substring(0, 10)}...)`);
-
-    // 4. Return the golden preauth URL
-    return `https://wmailetu.univ-artois.fr/service/preauth?isredirect=1&authtoken=${authToken}`;
   }
 
   /**
@@ -153,10 +171,9 @@ export class CasClient {
 
     const cookieHeader = cookies.map(c => `${c.key}=${c.value}`).join('; ');
 
-    // Extract sesskey from Moodle's frontend config (JavaScript M object)
-    const $ = cheerio.load(moodleRes.data);
-    const bodyText = $('body').html() || "";
-    const sesskeyMatch = bodyText.match(/"sesskey":"([^"]+)"/);
+    // Extract sesskey from the raw HTML structure (it's in the <head> scripts)
+    const rawHtml = moodleRes.data || "";
+    const sesskeyMatch = rawHtml.match(/"sesskey":"([^"]+)"/);
     const sesskey = sesskeyMatch ? sesskeyMatch[1] : "";
 
     console.log(`[CasClient] Moodle Session Forged! (sesskey=${sesskey})`);

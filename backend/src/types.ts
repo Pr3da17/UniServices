@@ -7,7 +7,7 @@ export interface UserSession {
   lastActivityTime: number;
   moodleSessionId: string; // MoodleSession cookie value
   sessionId?: string;
-  password?: string; // Stored for SSO-hopping
+  encryptedPassword?: { iv: string; content: string; tag: string }; // AES-256-GCM encrypted data
   zimbraCookies?: string[]; // Stored for persistent email access
   zimbraLastAuth?: number; // Timestamp of last successful Zimbra auth
   adeCookies?: string[]; // Stored for persistent timetable access

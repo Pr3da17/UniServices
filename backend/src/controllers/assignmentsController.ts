@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { getSession } from "../scrapers/moodleScraper";
-import { getScraper } from "../routes/auth";
-import type { ErrorResponse } from "../types";
+import { getSession } from "../scrapers/moodleScraper.js";
+import { getScraper } from "../routes/auth.js";
+import type { ErrorResponse } from "../types.js";
 
 const assignmentCache = new Map<string, { timestamp: number; data: any[] }>();
 const courseContentCache = new Map<string, { timestamp: number; data: any }>();

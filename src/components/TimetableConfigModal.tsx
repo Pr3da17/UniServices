@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, MapPin, GraduationCap, BookOpen, Users, ChevronRight, Loader2, CheckCircle2, LayoutGrid } from 'lucide-react';
 import axios from 'axios';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+import { getApiUrl } from '../utils/api';
 
 interface Group   { id: string; name: string; }
 interface Year    { id: string; name: string; groups: Group[]; }
@@ -33,7 +33,7 @@ export default function TimetableConfigModal({ isOpen, onClose, onSelect }: Prop
     
     setLoading(true);
     setError(null);
-    axios.get(`${BACKEND_URL}/api/timetable/tree`)
+    axios.get(getApiUrl("/api/timetable/tree"))
       .then(r => setTree(r.data))
       .catch(() => setError("Impossible de charger l'arborescence ADE."))
       .finally(() => setLoading(false));
@@ -136,7 +136,7 @@ export default function TimetableConfigModal({ isOpen, onClose, onSelect }: Prop
           ) : error ? (
             <div className="flex flex-col items-center justify-center h-64 gap-3 text-center px-8">
               <p className="text-sm text-red-400 font-medium">{error}</p>
-              <button onClick={() => { setError(null); setLoading(true); axios.get(`${BACKEND_URL}/api/timetable/tree`).then(r => setTree(r.data)).catch(() => setError("Erreur de chargement")).finally(() => setLoading(false)); }} className="text-xs text-primary underline">Réessayer</button>
+              <button onClick={() => { setError(null); setLoading(true); axios.get(getApiUrl("/api/timetable/tree")).then(r => setTree(r.data)).catch(() => setError("Erreur de chargement")).finally(() => setLoading(false)); }} className="text-xs text-primary underline">Réessayer</button>
             </div>
           ) : searchResults !== null ? (
             /* Mode recherche */

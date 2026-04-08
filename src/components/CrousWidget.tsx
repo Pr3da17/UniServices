@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Widget from "./Widget";
 import { Skeleton } from "./Skeleton";
+import { getApiUrl } from "../utils/api";
 
 interface Region {
   code: string;
@@ -55,8 +56,7 @@ export default function CrousWidget() {
   useEffect(() => {
     const fetchRegions = async () => {
       try {
-        const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
-        const res = await fetch(`${baseUrl}/api/crous/regions`);
+        const res = await fetch(getApiUrl("/api/crous/regions"));
         const json = await res.json();
         if (json.success) setRegions(json.data);
       } catch (err) {
@@ -71,8 +71,7 @@ export default function CrousWidget() {
     if (!selectedRegion) return;
     const fetchRestos = async () => {
       try {
-        const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
-        const res = await fetch(`${baseUrl}/api/crous/regions/${selectedRegion}/restaurants`);
+        const res = await fetch(getApiUrl(`/api/crous/regions/${selectedRegion}/restaurants`));
         const json = await res.json();
         if (json.success) {
           setRestaurants(json.data);
@@ -97,10 +96,9 @@ export default function CrousWidget() {
     setLoadingMenu(true);
     setError(null);
     try {
-      const baseUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
       const [detailsRes, menuRes] = await Promise.all([
-        fetch(`${baseUrl}/api/crous/restaurants/${selectedResto}`),
-        fetch(`${baseUrl}/api/crous/restaurants/${selectedResto}/menu`)
+        fetch(getApiUrl(`/api/crous/restaurants/${selectedResto}`)),
+        fetch(getApiUrl(`/api/crous/restaurants/${selectedResto}/menu`))
       ]);
       
       const detailsJson = await detailsRes.json();

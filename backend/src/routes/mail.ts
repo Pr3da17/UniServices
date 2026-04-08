@@ -1,50 +1,34 @@
 import { Router } from "express";
 import axios from "axios";
-import { CasClient } from "../utils/casClient";
-import { getSession } from "../scrapers/moodleScraper";
-import { scrapers } from "../controllers/authController";
-import { UserSession } from "../types";
+import { CasClient } from "../utils/casClient.js";
+import { getSession } from "../scrapers/moodleScraper.js";
+import { decrypt } from "../utils/security.js";
+import { UserSession } from "../types.js";
 
 const router = Router();
 
 const ZIMBRA_AUTH_TIMEOUT = 30 * 60 * 1000; // 30 minutes cache
 
 export async function refreshZimbraSession(session: UserSession): Promise<string[]> {
-    console.log(`📡 [Zimbra] Refreshing session (No-Puppeteer) for ${session.username}...`);
+    console.log(`📡 [Zimbra] Refreshing session (Optimized) for ${session.username}...`);
     
-    if (!session.password) {
+    if (!session.encryptedPassword) {
         throw new Error("Credentials missing in session. Please relogin.");
     }
 
     try {
         const cas = new CasClient();
-        await cas.login(session.username, session.password);
+        const password = decrypt(session.encryptedPassword);
+        const token = await cas.getZimbraSoapToken(session.username, password);
         
-        // Use the magic link logic but we just need the cookies it sets
-        const magicLink = await cas.getZimbraMagicLink();
-        
-        // The Magic Link logic already populated the cookie jar in cas.axiosInstance
-        // We just need to extract them from the CasClient or hit the magic link
-        const response = await axios.get(magicLink, {
-            maxRedirects: 0, // We just want the cookies from the first hop
-            validateStatus: () => true,
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
+        // Wrap it in a cookie format so the rest of the application stays standard
+        const cookieStrings = [`ZM_AUTH_TOKEN=${token}`];
 
-        const setCookieHeaders = response.headers['set-cookie'] || [];
-        if (setCookieHeaders.length === 0) {
-            // Fallback: try to hit it with a proper jar if needed, 
-            // but usually Preauth sets ZM_AUTH_TOKEN immediately
-            console.warn("⚠️ No cookies in magic link first hop, continuing with preauth sequence...");
-        }
-
-        const cookieStrings = setCookieHeaders;
-        
         // Update session
         session.zimbraCookies = cookieStrings;
         session.zimbraLastAuth = Date.now();
         
-        console.log(`✅ [Zimbra] Cookies refreshed browserlessly for ${session.username}`);
+        console.log(`✅ [Zimbra] Token fetched via SOAP for ${session.username}`);
         return cookieStrings;
     } catch (e: any) {
         console.error(`❌ [Zimbra] Direct refresh failed: ${e.message}`);
